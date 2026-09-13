@@ -112,6 +112,34 @@ export const authOptions: AuthOptions = {
     },
   },
   callbacks: {
+    // O NextAuth só grava os tokens de uma conta OAuth (tabela
+    // "contas_oauth") na primeira vez que ela é vinculada a um usuário —
+    // em logins seguintes, mesmo que o Google conceda um escopo NOVO (como
+    // o do Calendário, adicionado depois que contas já existiam), os
+    // tokens antigos e incompletos continuavam parados no banco, sem
+    // access_token/refresh_token do Calendário. Por isso atualizamos
+    // sempre, a cada login, com os tokens desta sessão — updateMany não
+    // faz nada se a conta ainda não existir (linkAccount acabou de criá-la
+    // com os mesmos valores, então é seguro e idempotente).
+    async signIn({ account }) {
+      if (account && (account.provider === 'google' || account.provider === 'facebook')) {
+        await prisma.account.updateMany({
+          where: { provider: account.provider, providerAccountId: account.providerAccountId },
+          data: {
+            access_token: account.access_token,
+            // Só sobrescreve o refresh_token quando um novo vier — o Google
+            // nem sempre reenvia um em cada login, e não queremos apagar um
+            // refresh_token válido que já tínhamos guardado.
+            ...(account.refresh_token ? { refresh_token: account.refresh_token } : {}),
+            expires_at: account.expires_at,
+            scope: account.scope,
+            token_type: account.token_type,
+            id_token: account.id_token,
+          },
+        })
+      }
+      return true
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
