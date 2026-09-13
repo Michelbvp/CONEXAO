@@ -36,7 +36,13 @@ export const criarPessoaSchema = z.object({
   ),
   telefone: textoOpcional(40),
   notas: textoOpcional(2000),
-  cadenciaDiasPersonalizada: z.coerce.number().int().min(1).max(3650).optional(),
+  // `undefined` (campo não enviado) deixa o valor atual intacto na edição;
+  // `null` (campo enviado vazio) limpa a cadência personalizada, voltando
+  // a pessoa a usar o padrão da categoria.
+  cadenciaDiasPersonalizada: z.preprocess(
+    (valor) => (valor === '' ? null : valor),
+    z.union([z.coerce.number().int().min(1).max(3650), z.null()]).optional(),
+  ),
 })
 
 export const atualizarPessoaSchema = criarPessoaSchema.partial().extend({

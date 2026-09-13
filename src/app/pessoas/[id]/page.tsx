@@ -1,5 +1,6 @@
 import { differenceInCalendarDays } from 'date-fns'
 import { getServerSession } from 'next-auth'
+import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 
 import { BotaoArquivarPessoa } from '@/components/BotaoArquivarPessoa'
@@ -7,6 +8,7 @@ import { CabecalhoApp } from '@/components/CabecalhoApp'
 import { FormularioInteracao } from '@/components/FormularioInteracao'
 import { SugestaoAcoes } from '@/components/SugestaoAcoes'
 import { Avatar } from '@/components/ui/Avatar'
+import { Botao } from '@/components/ui/Botao'
 import { Cartao } from '@/components/ui/Cartao'
 import { SeloStatus } from '@/components/ui/SeloStatus'
 import { authOptions } from '@/lib/auth'
@@ -65,7 +67,12 @@ export default async function PaginaPessoa({ params }: { params: Promise<{ id: s
             </div>
           </div>
 
-          <div className="mt-5 border-t border-prata-200 pt-4">
+          <div className="mt-5 flex gap-3 border-t border-prata-200 pt-4">
+            <Link href={`/pessoas/${pessoa.id}/editar`}>
+              <Botao variante="secundario" tamanho="sm">
+                Editar
+              </Botao>
+            </Link>
             <BotaoArquivarPessoa pessoaId={pessoa.id} nome={pessoa.nome} />
           </div>
         </Cartao>
