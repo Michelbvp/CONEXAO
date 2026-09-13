@@ -59,3 +59,19 @@ export const criarInteracaoSchema = z.object({
 export const responderSugestaoSchema = z.object({
   acao: z.enum(['confirmar', 'recusar']),
 })
+
+export const criarCategoriaSchema = z.object({
+  nome: z.string().trim().min(1, 'Informe um nome.').max(60),
+  icone: z.preprocess(
+    (valor) => (valor === null || valor === '' ? undefined : valor),
+    z.string().trim().max(8).optional(),
+  ),
+  cadenciaDiasPadrao: z.coerce.number().int().min(1, 'A cadência precisa ser de pelo menos 1 dia.').max(3650),
+  // Vem do formulário como uma lista de checkboxes marcadas; guardamos como
+  // texto separado por vírgula no banco (ver Categoria.tiposPreferidos).
+  tiposPreferidos: z
+    .array(z.enum(tiposContatoValidos))
+    .min(1, 'Selecione ao menos um tipo de contato preferido.'),
+})
+
+export const atualizarCategoriaSchema = criarCategoriaSchema.partial()
