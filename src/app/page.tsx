@@ -6,10 +6,17 @@ import { PessoaCard } from '@/components/PessoaCard'
 import { authOptions } from '@/lib/auth'
 import { sincronizarSugestoesDoUsuario } from '@/lib/cadencia'
 import { obterDashboard } from '@/lib/dashboard'
+import { garantirCategoriasPadrao } from '@/lib/onboarding'
 
 export default async function PaginaInicial() {
   const session = await getServerSession(authOptions)
   if (!session?.user) redirect('/login')
+
+  // Rede de segurança idempotente: se por qualquer motivo o usuário chegou
+  // até aqui sem as categorias padrão (ex.: um erro no meio do primeiro
+  // login), cria agora em vez de deixar o painel vazio. É seguro chamar
+  // sempre — a função já não faz nada se as categorias já existirem.
+  await garantirCategoriasPadrao(session.user.id)
 
   // Gera sugestões pendentes que ainda não existem antes de montar a tela.
   // Ver docs/ROADMAP.md sobre mover isso para um job agendado no futuro.

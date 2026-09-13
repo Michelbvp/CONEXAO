@@ -77,19 +77,30 @@ export const authOptions: AuthOptions = {
                 update: {},
                 create: { email: 'demo@conexao.app', name: 'Conta Demonstração' },
               })
+              // O provedor de credenciais não passa pelo adapter (não existe
+              // um "createUser" do NextAuth aqui), por isso garantimos as
+              // categorias padrão diretamente, já com o id definitivo do
+              // usuário (o upsert acima já terminou).
+              await garantirCategoriasPadrao(usuario.id)
               return { id: usuario.id, name: usuario.name, email: usuario.email }
             },
           }),
         ]
       : []),
   ],
-  callbacks: {
-    async signIn({ user }) {
-      if (user.id) {
-        await garantirCategoriasPadrao(user.id)
-      }
-      return true
+  // "events" (diferente de "callbacks") só dispara depois que o NextAuth já
+  // terminou de falar com o adapter — por isso createUser aqui garante que
+  // o usuário já existe de verdade no banco, com o id definitivo gerado
+  // pelo Prisma. Chamar isso a partir do callback `signIn` (como esta linha
+  // fazia antes) causava erro: para contas novas via Google/Facebook, o
+  // `user.id` recebido ali ainda não corresponde a uma linha persistida,
+  // e a criação das categorias violava a chave estrangeira.
+  events: {
+    async createUser({ user }) {
+      await garantirCategoriasPadrao(user.id)
     },
+  },
+  callbacks: {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
