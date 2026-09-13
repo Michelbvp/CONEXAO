@@ -201,6 +201,14 @@ model Interacao {
   nota   String?
   origem OrigemInteracao @default(MANUAL)
 
+  // Preenchidos quando o contato confirmado a partir de uma sugestão é
+  // sincronizado com o Google Calendário do usuário (ver
+  // src/lib/googleCalendar.ts). Ficam nulos se o usuário não conectou o
+  // Google, ou se a sincronização falhar — isso nunca impede o registro do
+  // contato em si.
+  googleEventId   String?
+  googleEventLink String?
+
   criadoEm DateTime @default(now())
 
   pessoa Pessoa @relation(fields: [pessoaId], references: [id], onDelete: Cascade)

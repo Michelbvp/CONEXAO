@@ -17,23 +17,34 @@ próximos pedidos.
 - Cadastro de pessoas, registro manual de contatos e histórico por pessoa.
 - Documentação de instalação, deploy gratuito e privacidade/LGPD.
 
-## Iteração 2 — sugestões
+## Iteração 2 — concluída
 
-- Tela de **edição** de pessoa (hoje só existe criação e arquivamento).
+- Tela de **edição** de pessoa, incluindo cadência personalizada.
 - Tela de **configurações de categoria** (renomear, ajustar cadência
-  padrão e tipos de contato preferidos pela própria interface, sem precisar
-  mexer no banco).
+  padrão e tipos de contato preferidos, criar/excluir categorias).
+
+Ainda pendente desta iteração (fica para uma próxima):
 - Tela de **"Minha conta"** com o botão de excluir conta (hoje a exclusão
   já existe como rota de API, mas sem botão na interface).
 - Paginação/filtro no painel quando houver muitas pessoas cadastradas.
 
-## Iteração 3 — Google Calendário
+## Iteração 3 — Google Calendário — concluída
 
-- Ao confirmar uma sugestão de contato, criar automaticamente um evento no
-  Google Calendário do usuário (ex.: "Café com Ana Beatriz"), com a opção
-  de escolher data/horário na hora da confirmação.
-- Exige pedir o escopo adicional `https://www.googleapis.com/auth/calendar.events`
-  no login com Google — só nesse momento, de forma explícita.
+- Ao confirmar uma sugestão de contato, o usuário escolhe a data/horário e
+  o app cria automaticamente um evento no Google Calendário principal dele
+  (ex.: "Café com Ana Beatriz"), com um link de volta para o evento visível
+  no histórico da pessoa.
+- Pede o escopo adicional `https://www.googleapis.com/auth/calendar.events`
+  (o mais restrito que o Google oferece para eventos) no login com Google —
+  quem já tinha conectado a conta antes precisa sair e entrar de novo para
+  conceder esse escopo.
+- Se o usuário não conectou o Google, ou se a chamada à API do Google
+  falhar por qualquer motivo, o contato é registrado normalmente mesmo
+  assim — a integração nunca bloqueia a funcionalidade principal.
+- Tokens de acesso são renovados sozinhos (usando o refresh_token obtido no
+  login) — ver `src/lib/googleCalendar.ts`.
+- **Fora do escopo por enquanto**: contatos registrados manualmente (fora
+  do fluxo de confirmar sugestão) não criam evento no Google Calendário.
 
 ## Iteração 4 — Google Contatos
 

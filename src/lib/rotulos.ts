@@ -24,6 +24,20 @@ export const ICONE_TIPO_CONTATO: Record<TipoContato, string> = {
   ENCONTRO_PRESENCIAL: '🤝',
 }
 
+// Duração padrão (minutos) do evento criado no Google Calendário ao
+// confirmar uma sugestão — só uma estimativa razoável; o usuário pode
+// ajustar o horário de término direto no Google Calendário depois.
+export const DURACAO_MINUTOS_TIPO_CONTATO: Record<TipoContato, number> = {
+  CAFE: 30,
+  LIGACAO: 15,
+  VIDEOCHAMADA: 30,
+  ALMOCO: 60,
+  JANTAR: 90,
+  EMAIL: 15,
+  MENSAGEM: 10,
+  ENCONTRO_PRESENCIAL: 60,
+}
+
 export function listaTiposContato(): TipoContato[] {
   return Object.keys(ROTULO_TIPO_CONTATO) as TipoContato[]
 }

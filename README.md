@@ -22,11 +22,13 @@ está aprendendo a partir do projeto.
   confirmar ou recusar.
 - Login com **Google** ou **Facebook** (e um modo de demonstração só para
   testar localmente, sem precisar configurar nada — veja `docs/DEPLOY.md`).
+- Ao confirmar uma sugestão, cria um **evento no Google Calendário** do
+  usuário na data/horário escolhido (se a conta Google estiver conectada).
 
 O que **ainda não** está implementado (e está mapeado em
-`docs/ROADMAP.md`): sincronização de verdade com Google Calendário,
-Google Contatos e Google Fotos. O modelo de dados já foi desenhado
-pensando nelas, mas a integração em si é uma próxima iteração.
+`docs/ROADMAP.md`): sincronização com Google Contatos e Google Fotos. O
+modelo de dados já foi desenhado pensando nelas, mas a integração em si é
+uma próxima iteração.
 
 ## Stack escolhida e por quê
 

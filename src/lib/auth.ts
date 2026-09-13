@@ -43,13 +43,24 @@ export const authOptions: AuthOptions = {
           GoogleProvider({
             clientId: process.env.GOOGLE_CLIENT_ID!,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-            // Escopo mínimo por enquanto: só identidade. Escopos de
-            // Calendário/Contatos/Fotos serão adicionados quando essas
-            // integrações forem implementadas (ver docs/ROADMAP.md), e
-            // sempre pedidos de forma explícita e incremental — nunca "tudo
-            // de uma vez" no primeiro login.
             authorization: {
-              params: { scope: 'openid email profile' },
+              params: {
+                // Escopo do Calendário é o mais restrito que o Google
+                // oferece para essa funcionalidade (calendar.events só dá
+                // acesso a eventos, não à agenda inteira nem a outros dados
+                // da conta). Contatos/Fotos ainda não são pedidos — só
+                // entram quando essas integrações forem implementadas (ver
+                // docs/ROADMAP.md), sempre de forma incremental.
+                scope: 'openid email profile https://www.googleapis.com/auth/calendar.events',
+                // access_type=offline + prompt=consent são o que faz o
+                // Google devolver um refresh_token (sem isso, o app só
+                // ganha um access_token que expira em ~1h e não tem como
+                // renovar sozinho depois). O efeito colateral é a tela de
+                // consentimento do Google aparecer a cada novo login — uma
+                // troca aceitável pela integração funcionar de verdade.
+                access_type: 'offline',
+                prompt: 'consent',
+              },
             },
           }),
         ]

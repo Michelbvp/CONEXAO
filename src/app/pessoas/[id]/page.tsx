@@ -107,13 +107,28 @@ export default async function PaginaPessoa({ params }: { params: Promise<{ id: s
               {pessoa.interacoes.map((interacao) => (
                 <li
                   key={interacao.id}
-                  className="flex items-center justify-between border-b border-prata-100 pb-3 last:border-0 last:pb-0"
+                  className="flex items-center justify-between gap-3 border-b border-prata-100 pb-3 last:border-0 last:pb-0"
                 >
                   <span className="text-sm text-grafite-800">
                     {ICONE_TIPO_CONTATO[interacao.tipo]} {ROTULO_TIPO_CONTATO[interacao.tipo]}
+                    {interacao.googleEventLink && (
+                      <>
+                        {' · '}
+                        <a
+                          href={interacao.googleEventLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline decoration-prata-400 underline-offset-2 hover:text-grafite-950"
+                        >
+                          Ver no Google Calendário
+                        </a>
+                      </>
+                    )}
                   </span>
-                  <span className="text-sm text-prata-500">
-                    {new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium' }).format(interacao.data)}
+                  <span className="shrink-0 text-sm text-prata-500">
+                    {new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium', timeStyle: 'short' }).format(
+                      interacao.data,
+                    )}
                   </span>
                 </li>
               ))}

@@ -54,19 +54,27 @@ A partir daqui, qualquer alteração que eu (o Claude) fizer no código, ou que
 você mesmo fizer, aparece automaticamente ao salvar o arquivo (o `next dev`
 recarrega sozinho).
 
-## 2. Configurando login com Google
+## 2. Configurando login com Google (e o Google Calendário)
 
 1. Acesse o [Google Cloud Console](https://console.cloud.google.com/) e crie
    um novo projeto (ou use um existente).
-2. No menu, vá em **APIs e serviços → Tela de consentimento OAuth**.
+2. Vá em **APIs e serviços → Biblioteca**, procure por **"Google Calendar
+   API"** e clique em **Ativar**. Sem esse passo, criar eventos vai falhar
+   com um erro dizendo que a API não está habilitada no projeto.
+3. No menu, vá em **APIs e serviços → Tela de consentimento OAuth**.
    - Tipo de usuário: **Externo**.
    - Preencha nome do app ("Conexão"), e-mail de suporte e e-mail de
      contato do desenvolvedor (o seu, michelbvp@gmail.com).
-   - Em "Escopos", por enquanto não é preciso adicionar nenhum escopo
-     sensível — o login usa só `openid`, `email` e `profile`.
+   - Em "Escopos", clique em "Adicionar ou remover escopos" e adicione:
+     `.../auth/calendar.events` (o Conexão usa esse escopo para criar
+     eventos quando você confirma uma sugestão de contato — ver
+     `docs/PRIVACIDADE.md`). O Google classifica esse escopo como
+     "sensível"; para uso pessoal em modo de teste isso não é um problema,
+     só é relevante se um dia o app for publicado para o público em geral
+     (aí o Google exige um processo de verificação).
    - Em "Usuários de teste" (enquanto o app não estiver "publicado"),
      adicione seu próprio e-mail do Google.
-3. Vá em **APIs e serviços → Credenciais → Criar credenciais → ID do
+4. Vá em **APIs e serviços → Credenciais → Criar credenciais → ID do
    cliente OAuth**.
    - Tipo de aplicativo: **Aplicativo da Web**.
    - Em "Origens JavaScript autorizadas", adicione:
@@ -77,9 +85,12 @@ recarrega sozinho).
      - `http://localhost:3000/api/auth/callback/google`
      - `https://SEU-DOMINIO/api/auth/callback/google` (troque pelo domínio
        real depois do deploy)
-4. Copie o **ID do cliente** e o **Segredo do cliente** gerados e cole em
+5. Copie o **ID do cliente** e o **Segredo do cliente** gerados e cole em
    `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` no `.env` (localmente) e nas
    variáveis de ambiente da Vercel (em produção — ver seção 4).
+6. Se você já tinha feito login com Google antes de configurar o escopo do
+   Calendário, saia da conta no Conexão (botão "Sair") e entre de novo — o
+   Google só concede um escopo novo depois de um consentimento novo.
 
 ## 3. Configurando login com Facebook
 

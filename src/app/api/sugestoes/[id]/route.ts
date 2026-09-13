@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+import { sincronizarComGoogleCalendar } from '@/lib/googleCalendar'
 import { prisma } from '@/lib/prisma'
+import { DURACAO_MINUTOS_TIPO_CONTATO, ROTULO_TIPO_CONTATO } from '@/lib/rotulos'
 import { obterUserIdOuNulo, respostaNaoAutenticado, respostaNaoEncontrado } from '@/lib/sessao'
 import { responderSugestaoSchema } from '@/lib/validacao'
 
@@ -24,6 +26,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const { id } = await params
   const sugestao = await prisma.sugestao.findFirst({
     where: { id, status: 'PENDENTE', pessoa: { userId } },
+    include: { pessoa: { select: { nome: true } } },
   })
   if (!sugestao) return respostaNaoEncontrado('Sugestão não encontrada ou já respondida.')
 
@@ -35,6 +38,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json(atualizada)
   }
 
+  const dataDoContato = resultado.data.dataHora ?? new Date()
+
   // Confirmar: cria a interação de verdade e fecha a sugestão, dentro de
   // uma transação para nunca deixar os dois fora de sincronia.
   const [interacao, sugestaoAtualizada] = await prisma.$transaction(async (tx) => {
@@ -42,7 +47,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       data: {
         pessoaId: sugestao.pessoaId,
         tipo: sugestao.tipoSugerido,
-        data: new Date(),
+        data: dataDoContato,
         origem: 'SUGESTAO_CONFIRMADA',
       },
     })
@@ -53,5 +58,28 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return [novaInteracao, sugestaoAtualizada] as const
   })
 
-  return NextResponse.json({ interacao, sugestao: sugestaoAtualizada })
+  // Sincroniza com o Google Calendário DEPOIS de confirmar no banco — é uma
+  // chamada de rede (não deve ficar dentro da transação) e, se falhar, o
+  // contato já está registrado mesmo assim (ver sincronizarComGoogleCalendar).
+  const tituloEvento = `${ROTULO_TIPO_CONTATO[sugestao.tipoSugerido]} com ${sugestao.pessoa.nome}`
+  const resultadoCalendario = await sincronizarComGoogleCalendar(userId, {
+    titulo: tituloEvento,
+    descricao: 'Contato agendado pelo Conexão.',
+    inicio: dataDoContato,
+    fimEmMinutos: DURACAO_MINUTOS_TIPO_CONTATO[sugestao.tipoSugerido],
+  })
+
+  let interacaoFinal = interacao
+  if (resultadoCalendario.status === 'sucesso') {
+    interacaoFinal = await prisma.interacao.update({
+      where: { id: interacao.id },
+      data: { googleEventId: resultadoCalendario.eventId, googleEventLink: resultadoCalendario.eventLink },
+    })
+  }
+
+  return NextResponse.json({
+    interacao: interacaoFinal,
+    sugestao: sugestaoAtualizada,
+    googleCalendar: resultadoCalendario.status,
+  })
 }

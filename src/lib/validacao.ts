@@ -58,6 +58,12 @@ export const criarInteracaoSchema = z.object({
 
 export const responderSugestaoSchema = z.object({
   acao: z.enum(['confirmar', 'recusar']),
+  // Só usado quando acao="confirmar": data/horário escolhido pelo usuário
+  // para o contato. Sem isso, vale "agora" (ver rota de sugestões).
+  dataHora: z.preprocess(
+    (valor) => (valor === null || valor === '' ? undefined : valor),
+    z.coerce.date().optional(),
+  ),
 })
 
 export const criarCategoriaSchema = z.object({
