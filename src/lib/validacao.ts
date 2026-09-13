@@ -66,6 +66,17 @@ export const responderSugestaoSchema = z.object({
   ),
 })
 
+export const responderAgendamentoSchema = z.object({
+  acao: z.enum(['realizado', 'reagendar', 'cancelar']),
+  // Obrigatório só quando acao="reagendar" — checado na própria rota,
+  // porque o zod não expressa bem "obrigatório dependendo de outro campo"
+  // sem deixar a mensagem de erro confusa.
+  dataHora: z.preprocess(
+    (valor) => (valor === null || valor === '' ? undefined : valor),
+    z.coerce.date().optional(),
+  ),
+})
+
 export const criarCategoriaSchema = z.object({
   nome: z.string().trim().min(1, 'Informe um nome.').max(60),
   icone: z.preprocess(

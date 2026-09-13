@@ -77,6 +77,7 @@ export async function sincronizarSugestoesDoUsuario(userId: string): Promise<voi
       categoria: true,
       interacoes: { orderBy: { data: 'desc' }, take: 1 },
       sugestoes: { where: { status: 'PENDENTE' }, take: 1 },
+      agendamentos: { where: { status: 'AGENDADO' }, take: 1 },
     },
   })
 
@@ -89,6 +90,7 @@ export async function sincronizarSugestoesDoUsuario(userId: string): Promise<voi
 
   for (const pessoa of pessoas) {
     if (pessoa.sugestoes.length > 0) continue // já existe sugestão pendente
+    if (pessoa.agendamentos.length > 0) continue // já tem um contato agendado pra ela
 
     const ultimaInteracao = pessoa.interacoes[0] ?? null
     const diasDesde = ultimaInteracao

@@ -13,7 +13,12 @@ export function CabecalhoApp({ session }: { session: Session }) {
           Conexão
         </Link>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-3">
+          <Link href="/agenda">
+            <Botao variante="fantasma" tamanho="sm">
+              Agenda
+            </Botao>
+          </Link>
           <Link href="/categorias">
             <Botao variante="fantasma" tamanho="sm">
               Categorias

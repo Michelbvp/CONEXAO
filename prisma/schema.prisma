@@ -110,13 +110,25 @@ enum StatusSugestao {
   @@map("status_sugestao")
 }
 
-// Como uma interação foi registrada: digitada manualmente pelo usuário ou
-// criada automaticamente ao confirmar uma sugestão do app.
+// Como uma interação foi registrada: digitada manualmente pelo usuário,
+// criada ao confirmar uma sugestão para "agora" (sem agendamento), ou
+// criada ao marcar um Agendamento como realizado.
 enum OrigemInteracao {
   MANUAL
   SUGESTAO_CONFIRMADA
+  AGENDAMENTO_REALIZADO
 
   @@map("origem_interacao")
+}
+
+// Situação de um Agendamento: AGENDADO enquanto espera o desfecho;
+// REALIZADO/CANCELADO são estados finais.
+enum StatusAgendamento {
+  AGENDADO
+  REALIZADO
+  CANCELADO
+
+  @@map("status_agendamento")
 }
 
 // Categoria de relacionamento (ex.: Mentor, Colegas de Trabalho, Família).
@@ -181,9 +193,10 @@ model Pessoa {
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  interacoes Interacao[]
-  sugestoes  Sugestao[]
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interacoes   Interacao[]
+  sugestoes    Sugestao[]
+  agendamentos Agendamento[]
 
   @@index([userId])
   @@index([categoriaId])
@@ -211,7 +224,8 @@ model Interacao {
 
   criadoEm DateTime @default(now())
 
-  pessoa Pessoa @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
+  pessoa            Pessoa       @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
+  agendamentoOrigem Agendamento?
 
   @@index([pessoaId, data])
   @@map("interacoes")
@@ -240,4 +254,40 @@ model Sugestao {
 
   @@index([pessoaId, status])
   @@map("sugestoes")
+}
+
+// Um contato marcado para uma data/horário futuro (ao confirmar uma
+// sugestão com data no futuro — ver src/app/api/sugestoes/[id]/route.ts).
+// Fica "ativo" (AGENDADO) até o usuário dizer o que aconteceu: Realizado
+// (vira uma Interacao de verdade, contando para a cadência), Cancelado
+// (fecha aqui mesmo, sem gerar Interacao) ou Reagendado (continua
+// AGENDADO, só muda a data/hora). Nunca é criado nem resolvido sozinho —
+// sempre por uma ação explícita do usuário.
+model Agendamento {
+  id       String @id @default(cuid())
+  pessoaId String
+
+  tipo     TipoContato
+  dataHora DateTime
+  status   StatusAgendamento @default(AGENDADO)
+
+  // Preenchido quando o usuário marca como "realizado" — aponta para a
+  // interação de verdade criada nesse momento. Fica nulo se o agendamento
+  // for cancelado (cancelamento não gera Interacao).
+  interacaoGeradaId String?    @unique
+  interacaoGerada   Interacao? @relation(fields: [interacaoGeradaId], references: [id])
+
+  // Evento no Google Calendário: criado ao agendar, atualizado se o
+  // usuário reagendar, removido se cancelar (ver src/lib/googleCalendar.ts).
+  googleEventId   String?
+  googleEventLink String?
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  pessoa Pessoa @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
+
+  @@index([pessoaId, status])
+  @@index([status, dataHora])
+  @@map("agendamentos")
 }

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 
+import { AgendamentoAcoes } from '@/components/AgendamentoAcoes'
 import { BotaoArquivarPessoa } from '@/components/BotaoArquivarPessoa'
 import { CabecalhoApp } from '@/components/CabecalhoApp'
 import { FormularioInteracao } from '@/components/FormularioInteracao'
@@ -13,7 +14,7 @@ import { Cartao } from '@/components/ui/Cartao'
 import { SeloStatus } from '@/components/ui/SeloStatus'
 import { authOptions } from '@/lib/auth'
 import { cadenciaEfetivaDias, calcularStatusContato } from '@/lib/cadencia'
-import { formatarDiasDesde } from '@/lib/formatacao'
+import { dataParaDatetimeLocal, formatarDiasDesde } from '@/lib/formatacao'
 import { prisma } from '@/lib/prisma'
 import { ICONE_TIPO_CONTATO, ROTULO_TIPO_CONTATO } from '@/lib/rotulos'
 
@@ -28,6 +29,7 @@ export default async function PaginaPessoa({ params }: { params: Promise<{ id: s
       categoria: true,
       interacoes: { orderBy: { data: 'desc' } },
       sugestoes: { where: { status: 'PENDENTE' }, orderBy: { criadoEm: 'desc' } },
+      agendamentos: { orderBy: { dataHora: 'desc' } },
     },
   })
   if (!pessoa) notFound()
@@ -39,6 +41,29 @@ export default async function PaginaPessoa({ params }: { params: Promise<{ id: s
   const cadenciaDias = cadenciaEfetivaDias(pessoa, pessoa.categoria)
   const status = calcularStatusContato(diasDesde, cadenciaDias)
   const sugestaoPendente = pessoa.sugestoes[0] ?? null
+  const agendamentoPendente = pessoa.agendamentos.find((a) => a.status === 'AGENDADO') ?? null
+
+  // Histórico = interações de verdade + agendamentos cancelados (que nunca
+  // viram interação, mas o usuário precisa ver que existiram e o que
+  // aconteceu com eles). Agendamentos REALIZADOS já aparecem via a
+  // interação que geraram, então não entram aqui de novo.
+  type ItemHistorico = {
+    id: string
+    data: Date
+    tipo: (typeof pessoa.interacoes)[number]['tipo']
+    googleEventLink: string | null
+    cancelado: boolean
+  }
+  const historico: ItemHistorico[] = [
+    ...pessoa.interacoes.map(
+      (i): ItemHistorico => ({ id: i.id, data: i.data, tipo: i.tipo, googleEventLink: i.googleEventLink, cancelado: false }),
+    ),
+    ...pessoa.agendamentos
+      .filter((a) => a.status === 'CANCELADO')
+      .map(
+        (a): ItemHistorico => ({ id: a.id, data: a.dataHora, tipo: a.tipo, googleEventLink: null, cancelado: true }),
+      ),
+  ].sort((a, b) => b.data.getTime() - a.data.getTime())
 
   return (
     <div className="min-h-screen bg-marfim">
@@ -93,6 +118,27 @@ export default async function PaginaPessoa({ params }: { params: Promise<{ id: s
           </Cartao>
         )}
 
+        {agendamentoPendente && (
+          <Cartao className="mt-6 p-6">
+            <h2 className="text-base">Agendamento</h2>
+            <p className="mt-1 text-sm text-grafite-800">
+              {ICONE_TIPO_CONTATO[agendamentoPendente.tipo]} {ROTULO_TIPO_CONTATO[agendamentoPendente.tipo]}
+              <span className="text-prata-600">
+                {' — '}
+                {new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium', timeStyle: 'short' }).format(
+                  agendamentoPendente.dataHora,
+                )}
+              </span>
+            </p>
+            <div className="mt-3">
+              <AgendamentoAcoes
+                agendamentoId={agendamentoPendente.id}
+                dataHoraAtual={dataParaDatetimeLocal(agendamentoPendente.dataHora)}
+              />
+            </div>
+          </Cartao>
+        )}
+
         <Cartao className="mt-6 p-6">
           <h2 className="mb-4 text-base">Registrar um contato</h2>
           <FormularioInteracao pessoaId={pessoa.id} />
@@ -100,22 +146,23 @@ export default async function PaginaPessoa({ params }: { params: Promise<{ id: s
 
         <Cartao className="mt-6 p-6">
           <h2 className="mb-4 text-base">Histórico</h2>
-          {pessoa.interacoes.length === 0 ? (
+          {historico.length === 0 ? (
             <p className="text-sm text-prata-500">Nenhum contato registrado ainda.</p>
           ) : (
             <ul className="flex flex-col gap-3">
-              {pessoa.interacoes.map((interacao) => (
+              {historico.map((item) => (
                 <li
-                  key={interacao.id}
+                  key={item.id}
                   className="flex items-center justify-between gap-3 border-b border-prata-100 pb-3 last:border-0 last:pb-0"
                 >
-                  <span className="text-sm text-grafite-800">
-                    {ICONE_TIPO_CONTATO[interacao.tipo]} {ROTULO_TIPO_CONTATO[interacao.tipo]}
-                    {interacao.googleEventLink && (
+                  <span className={item.cancelado ? 'text-sm text-prata-500' : 'text-sm text-grafite-800'}>
+                    {ICONE_TIPO_CONTATO[item.tipo]} {ROTULO_TIPO_CONTATO[item.tipo]}
+                    {item.cancelado && ' · Cancelado'}
+                    {item.googleEventLink && (
                       <>
                         {' · '}
                         <a
-                          href={interacao.googleEventLink}
+                          href={item.googleEventLink}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="underline decoration-prata-400 underline-offset-2 hover:text-grafite-950"
@@ -126,9 +173,7 @@ export default async function PaginaPessoa({ params }: { params: Promise<{ id: s
                     )}
                   </span>
                   <span className="shrink-0 text-sm text-prata-500">
-                    {new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium', timeStyle: 'short' }).format(
-                      interacao.data,
-                    )}
+                    {new Intl.DateTimeFormat('pt-BR', { dateStyle: 'medium', timeStyle: 'short' }).format(item.data)}
                   </span>
                 </li>
               ))}

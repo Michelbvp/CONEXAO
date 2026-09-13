@@ -46,6 +46,27 @@ Ainda pendente desta iteração (fica para uma próxima):
 - **Fora do escopo por enquanto**: contatos registrados manualmente (fora
   do fluxo de confirmar sugestão) não criam evento no Google Calendário.
 
+## Iteração 3.5 — Agendamentos — concluída
+
+- Confirmar uma sugestão com data/horário no **futuro** não vai mais direto
+  pro histórico: cria um **Agendamento** (status "Agendado"), que fica
+  ativo esperando o usuário dizer o que aconteceu. Confirmar para
+  agora/passado continua indo direto pro histórico, como antes.
+- Um Agendamento pendente aparece no painel principal (card da pessoa) e
+  na página da pessoa, com três ações:
+  - **Realizado** → cria a interação de verdade no histórico;
+  - **Reagendar** → só muda a data/horário (continua Agendado), e atualiza
+    o evento correspondente no Google Calendário;
+  - **Cancelar** → fecha o agendamento sem virar uma interação; aparece no
+    histórico da pessoa marcado como "Cancelado" (mantém o registro do que
+    foi combinado e não aconteceu), e remove o evento do Google Calendário.
+- Nova página **Agenda** (link no cabeçalho): lista os agendamentos dos
+  próximos 7 dias de todas as pessoas, com as mesmas três ações à mão —
+  além de uma seção "Atrasados" para agendamentos cuja data já passou e
+  ainda não foram resolvidos.
+- Enquanto uma pessoa tem um agendamento pendente, o app não gera uma nova
+  sugestão de contato pra ela (evita sugerir algo que já está marcado).
+
 ## Iteração 4 — Google Contatos
 
 - Importar pessoas existentes do Google Contatos como sugestão de cadastro

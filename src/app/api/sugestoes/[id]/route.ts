@@ -9,9 +9,12 @@ import { responderSugestaoSchema } from '@/lib/validacao'
 /**
  * Confirma ou recusa uma sugestão de contato.
  *
- * Este é o único lugar do app onde uma sugestão vira, de fato, um contato
- * agendado/registrado — e só acontece por uma ação explícita do usuário
- * (nunca automaticamente), conforme pedido no produto.
+ * Confirmar com uma data/horário no FUTURO cria um Agendamento (fica
+ * "ativo", esperando o usuário dizer depois se o contato foi realizado,
+ * cancelado ou precisa ser reagendado — ver /api/agendamentos/[id]).
+ * Confirmar para agora (ou uma data passada) registra o contato
+ * diretamente no histórico, como já acontecia antes do agendamento
+ * existir. Em nenhum dos dois casos nada é decidido pelo app sozinho.
  */
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const userId = await obterUserIdOuNulo()
@@ -38,10 +41,54 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return NextResponse.json(atualizada)
   }
 
-  const dataDoContato = resultado.data.dataHora ?? new Date()
+  const agora = new Date()
+  const dataDoContato = resultado.data.dataHora ?? agora
+  const ehAgendamentoFuturo = dataDoContato.getTime() > agora.getTime()
 
-  // Confirmar: cria a interação de verdade e fecha a sugestão, dentro de
-  // uma transação para nunca deixar os dois fora de sincronia.
+  const tituloEvento = `${ROTULO_TIPO_CONTATO[sugestao.tipoSugerido]} com ${sugestao.pessoa.nome}`
+  const duracaoMinutos = DURACAO_MINUTOS_TIPO_CONTATO[sugestao.tipoSugerido]
+
+  if (ehAgendamentoFuturo) {
+    const [agendamento, sugestaoAtualizada] = await prisma.$transaction(async (tx) => {
+      const novoAgendamento = await tx.agendamento.create({
+        data: {
+          pessoaId: sugestao.pessoaId,
+          tipo: sugestao.tipoSugerido,
+          dataHora: dataDoContato,
+        },
+      })
+      const sugestaoAtualizada = await tx.sugestao.update({
+        where: { id: sugestao.id },
+        data: { status: 'CONFIRMADA', respondidoEm: new Date() },
+      })
+      return [novoAgendamento, sugestaoAtualizada] as const
+    })
+
+    const resultadoCalendario = await sincronizarComGoogleCalendar(userId, {
+      titulo: tituloEvento,
+      descricao: 'Agendado pelo Conexão.',
+      inicio: dataDoContato,
+      fimEmMinutos: duracaoMinutos,
+    })
+
+    let agendamentoFinal = agendamento
+    if (resultadoCalendario.status === 'sucesso') {
+      agendamentoFinal = await prisma.agendamento.update({
+        where: { id: agendamento.id },
+        data: { googleEventId: resultadoCalendario.eventId, googleEventLink: resultadoCalendario.eventLink },
+      })
+    }
+
+    return NextResponse.json({
+      agendamento: agendamentoFinal,
+      sugestao: sugestaoAtualizada,
+      googleCalendar: resultadoCalendario.status,
+    })
+  }
+
+  // Confirmar para agora/passado: cria a interação de verdade e fecha a
+  // sugestão, dentro de uma transação para nunca deixar os dois fora de
+  // sincronia.
   const [interacao, sugestaoAtualizada] = await prisma.$transaction(async (tx) => {
     const novaInteracao = await tx.interacao.create({
       data: {
@@ -61,12 +108,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   // Sincroniza com o Google Calendário DEPOIS de confirmar no banco — é uma
   // chamada de rede (não deve ficar dentro da transação) e, se falhar, o
   // contato já está registrado mesmo assim (ver sincronizarComGoogleCalendar).
-  const tituloEvento = `${ROTULO_TIPO_CONTATO[sugestao.tipoSugerido]} com ${sugestao.pessoa.nome}`
   const resultadoCalendario = await sincronizarComGoogleCalendar(userId, {
     titulo: tituloEvento,
-    descricao: 'Contato agendado pelo Conexão.',
+    descricao: 'Contato registrado pelo Conexão.',
     inicio: dataDoContato,
-    fimEmMinutos: DURACAO_MINUTOS_TIPO_CONTATO[sugestao.tipoSugerido],
+    fimEmMinutos: duracaoMinutos,
   })
 
   let interacaoFinal = interacao

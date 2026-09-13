@@ -6,11 +6,17 @@ export function formatarDiasDesde(dias: number | null): string {
 }
 
 /**
- * Valor padrão (agora, no fuso horário local do navegador) para um input
- * HTML `datetime-local`, no formato exigido por ele: "AAAA-MM-DDTHH:mm".
+ * Converte uma data qualquer para o formato exigido por um input HTML
+ * `datetime-local` ("AAAA-MM-DDTHH:mm"), no fuso horário local do
+ * navegador — sem isso, o input mostraria a hora em UTC.
  */
+export function dataParaDatetimeLocal(data: Date): string {
+  const comFusoLocal = new Date(data)
+  comFusoLocal.setMinutes(comFusoLocal.getMinutes() - comFusoLocal.getTimezoneOffset())
+  return comFusoLocal.toISOString().slice(0, 16)
+}
+
+/** Valor padrão (agora) para um input `datetime-local`. */
 export function agoraParaDatetimeLocal(): string {
-  const agora = new Date()
-  agora.setMinutes(agora.getMinutes() - agora.getTimezoneOffset())
-  return agora.toISOString().slice(0, 16)
+  return dataParaDatetimeLocal(new Date())
 }

@@ -20,6 +20,11 @@ export type PessoaResumo = {
     tipoSugerido: TipoContato
     motivo: string | null
   } | null
+  agendamentoPendente: {
+    id: string
+    tipo: TipoContato
+    dataHora: Date
+  } | null
 }
 
 export type CategoriaComPessoas = {
@@ -41,6 +46,7 @@ export async function obterDashboard(userId: string): Promise<CategoriaComPessoa
         include: {
           interacoes: { orderBy: { data: 'desc' }, take: 1 },
           sugestoes: { where: { status: 'PENDENTE' }, take: 1, orderBy: { criadoEm: 'desc' } },
+          agendamentos: { where: { status: 'AGENDADO' }, take: 1, orderBy: { dataHora: 'asc' } },
         },
       },
     },
@@ -57,6 +63,7 @@ export async function obterDashboard(userId: string): Promise<CategoriaComPessoa
         : null
       const cadenciaDias = cadenciaEfetivaDias(pessoa, categoria)
       const sugestao = pessoa.sugestoes[0] ?? null
+      const agendamento = pessoa.agendamentos[0] ?? null
 
       return {
         id: pessoa.id,
@@ -71,6 +78,9 @@ export async function obterDashboard(userId: string): Promise<CategoriaComPessoa
         status: calcularStatusContato(diasDesde, cadenciaDias),
         sugestaoPendente: sugestao
           ? { id: sugestao.id, tipoSugerido: sugestao.tipoSugerido, motivo: sugestao.motivo }
+          : null,
+        agendamentoPendente: agendamento
+          ? { id: agendamento.id, tipo: agendamento.tipo, dataHora: agendamento.dataHora }
           : null,
       }
     }),

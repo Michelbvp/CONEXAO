@@ -20,10 +20,16 @@ está aprendendo a partir do projeto.
   jantar, e-mail...) com base numa cadência configurável por categoria —
   e **nunca agenda nada sozinho**: toda sugestão fica pendente até você
   confirmar ou recusar.
+- Confirmar uma sugestão para uma data **futura** cria um **agendamento**
+  (não vai direto pro histórico) — que fica esperando você marcar como
+  **realizado**, **reagendar** ou **cancelar**. Uma página **Agenda**
+  mostra os agendamentos dos próximos 7 dias.
 - Login com **Google** ou **Facebook** (e um modo de demonstração só para
   testar localmente, sem precisar configurar nada — veja `docs/DEPLOY.md`).
-- Ao confirmar uma sugestão, cria um **evento no Google Calendário** do
-  usuário na data/horário escolhido (se a conta Google estiver conectada).
+- Ao confirmar/realizar um contato, cria um **evento no Google Calendário**
+  do usuário na data/horário escolhido (se a conta Google estiver
+  conectada) — e mantém o evento em dia se o contato for reagendado ou
+  cancelado.
 
 O que **ainda não** está implementado (e está mapeado em
 `docs/ROADMAP.md`): sincronização com Google Contatos e Google Fotos. O

@@ -25,7 +25,7 @@ const GOOGLE_CALENDAR_EVENTS_URL = 'https://www.googleapis.com/calendar/v3/calen
 // segundos de diferença de relógio.
 const MARGEM_EXPIRACAO_SEGUNDOS = 60
 
-async function obterAccessTokenGoogleValido(userId: string): Promise<string | null> {
+export async function obterAccessTokenGoogleValido(userId: string): Promise<string | null> {
   const conta = await prisma.account.findFirst({
     where: { userId, provider: 'google' },
   })
@@ -118,5 +118,72 @@ export async function sincronizarComGoogleCalendar(
   } catch (erro) {
     console.error('Erro inesperado ao sincronizar com o Google Calendário:', erro)
     return { status: 'erro', motivo: 'Erro inesperado' }
+  }
+}
+
+/**
+ * Atualiza a data/horário de um evento já existente (usado ao reagendar um
+ * Agendamento). Best-effort como as demais funções deste módulo: uma falha
+ * aqui nunca deve impedir o reagendamento em si dentro do app.
+ */
+export async function atualizarEventoNoGoogleCalendar(
+  userId: string,
+  eventId: string,
+  evento: { inicio: Date; fimEmMinutos: number },
+): Promise<ResultadoSincronizacaoCalendario> {
+  try {
+    const accessToken = await obterAccessTokenGoogleValido(userId)
+    if (!accessToken) return { status: 'sem_google' }
+
+    const fim = new Date(evento.inicio.getTime() + evento.fimEmMinutos * 60_000)
+
+    const resposta = await fetch(`${GOOGLE_CALENDAR_EVENTS_URL}/${eventId}`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        start: { dateTime: evento.inicio.toISOString(), timeZone: 'UTC' },
+        end: { dateTime: fim.toISOString(), timeZone: 'UTC' },
+      }),
+    })
+
+    if (!resposta.ok) {
+      const corpo = await resposta.text()
+      console.error('Falha ao atualizar evento no Google Calendário:', resposta.status, corpo)
+      return { status: 'erro', motivo: `Google respondeu ${resposta.status}` }
+    }
+
+    const dados = (await resposta.json()) as { id: string; htmlLink: string }
+    return { status: 'sucesso', eventId: dados.id, eventLink: dados.htmlLink }
+  } catch (erro) {
+    console.error('Erro inesperado ao atualizar evento no Google Calendário:', erro)
+    return { status: 'erro', motivo: 'Erro inesperado' }
+  }
+}
+
+/**
+ * Remove um evento do Google Calendário (usado ao cancelar um
+ * Agendamento). Best-effort: se falhar, o cancelamento no app acontece do
+ * mesmo jeito — na pior das hipóteses, o evento fica "esquecido" na agenda
+ * do usuário, que pode apagá-lo manualmente.
+ */
+export async function removerEventoDoGoogleCalendar(userId: string, eventId: string): Promise<void> {
+  try {
+    const accessToken = await obterAccessTokenGoogleValido(userId)
+    if (!accessToken) return
+
+    const resposta = await fetch(`${GOOGLE_CALENDAR_EVENTS_URL}/${eventId}`, {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+
+    // 410 (Gone) é esperado se o evento já tiver sido apagado antes — não é erro.
+    if (!resposta.ok && resposta.status !== 410) {
+      console.error('Falha ao remover evento do Google Calendário:', resposta.status, await resposta.text())
+    }
+  } catch (erro) {
+    console.error('Erro inesperado ao remover evento do Google Calendário:', erro)
   }
 }
