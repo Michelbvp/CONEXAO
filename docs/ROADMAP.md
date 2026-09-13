@@ -43,15 +43,16 @@ Ainda pendente desta iteração (fica para uma próxima):
   assim — a integração nunca bloqueia a funcionalidade principal.
 - Tokens de acesso são renovados sozinhos (usando o refresh_token obtido no
   login) — ver `src/lib/googleCalendar.ts`.
-- **Fora do escopo por enquanto**: contatos registrados manualmente (fora
-  do fluxo de confirmar sugestão) não criam evento no Google Calendário.
 
 ## Iteração 3.5 — Agendamentos — concluída
 
-- Confirmar uma sugestão com data/horário no **futuro** não vai mais direto
-  pro histórico: cria um **Agendamento** (status "Agendado"), que fica
-  ativo esperando o usuário dizer o que aconteceu. Confirmar para
-  agora/passado continua indo direto pro histórico, como antes.
+- **Registrar um contato pela tela da pessoa e confirmar uma sugestão
+  seguem exatamente a mesma regra agora**: escolher uma data/horário no
+  **futuro** não vai mais direto pro histórico — cria um **Agendamento**
+  (status "Agendado"), que fica ativo esperando o usuário dizer o que
+  aconteceu. Escolher agora/passado continua indo direto pro histórico,
+  como antes — e em ambos os casos, com sincronização no Google
+  Calendário (se a conta estiver conectada).
 - Um Agendamento pendente aparece no painel principal (card da pessoa) e
   na página da pessoa, com três ações:
   - **Realizado** → cria a interação de verdade no histórico;
