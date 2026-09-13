@@ -1,0 +1,235 @@
+// ============================================================================
+// CONEXÃO — modelo de dados (Prisma)
+// ----------------------------------------------------------------------------
+// Banco alvo: PostgreSQL (funciona bem em planos gratuitos como Neon/Supabase
+// e é o banco relacional padrão suportado pela Vercel). Ver docs/DEPLOY.md.
+//
+// Convenções:
+// - Nomes de modelos e campos ficam em português, pois este projeto é
+//   didático e o dono do repositório está aprendendo a partir do código.
+// - Toda tabela que guarda dado pessoal pertence a um "User" (dono da conta)
+//   e é excluída em cascata quando o usuário exclui a conta — ver
+//   docs/PRIVACIDADE.md (princípio da minimização/eliminação da LGPD).
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Autenticação (NextAuth.js / Auth.js) — formato exigido pelo PrismaAdapter.
+// Guarda apenas o necessário para login social (Google/Facebook); nenhuma
+// senha é armazenada pelo próprio app.
+// ---------------------------------------------------------------------------
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  criadoEm      DateTime  @default(now())
+
+  accounts Account[]
+  sessions Session[]
+
+  categorias Categoria[]
+  pessoas    Pessoa[]
+
+  @@map("usuarios")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("contas_oauth")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessoes")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("tokens_verificacao")
+}
+
+// ---------------------------------------------------------------------------
+// Domínio do app
+// ---------------------------------------------------------------------------
+
+// Tipo de contato direto que pode ser sugerido/registrado.
+enum TipoContato {
+  CAFE
+  LIGACAO
+  VIDEOCHAMADA
+  ALMOCO
+  JANTAR
+  EMAIL
+  MENSAGEM
+  ENCONTRO_PRESENCIAL
+
+  @@map("tipo_contato")
+}
+
+enum StatusSugestao {
+  PENDENTE
+  CONFIRMADA
+  RECUSADA
+  EXPIRADA
+
+  @@map("status_sugestao")
+}
+
+// Como uma interação foi registrada: digitada manualmente pelo usuário ou
+// criada automaticamente ao confirmar uma sugestão do app.
+enum OrigemInteracao {
+  MANUAL
+  SUGESTAO_CONFIRMADA
+
+  @@map("origem_interacao")
+}
+
+// Categoria de relacionamento (ex.: Mentor, Colegas de Trabalho, Família).
+// É por usuário (não global) para permitir personalização total: o usuário
+// pode renomear, ajustar a cadência sugerida ou criar novas categorias.
+// As três categorias do pedido original são criadas automaticamente para
+// cada novo usuário (ver src/lib/onboarding.ts).
+model Categoria {
+  id       String @id @default(cuid())
+  userId   String
+  nome     String
+  icone    String @default("👤")
+  ordem    Int    @default(0)
+
+  // Cada quantos dias, em média, o app sugere um novo contato direto para
+  // pessoas desta categoria, na ausência de uma preferência específica da
+  // pessoa (ver Pessoa.cadenciaDiasPersonalizada).
+  cadenciaDiasPadrao Int @default(30)
+
+  // Quais tipos de contato o app pode sugerir para esta categoria, em ordem
+  // de preferência. Guardado como texto (nomes do enum TipoContato)
+  // separados por vírgula para simplicidade no SQLite/Postgres via Prisma.
+  tiposPreferidos String @default("LIGACAO,CAFE,EMAIL")
+
+  criadoEm DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pessoas Pessoa[]
+
+  @@unique([userId, nome])
+  @@map("categorias")
+}
+
+// Uma pessoa do círculo de relacionamento do usuário.
+model Pessoa {
+  id     String @id @default(cuid())
+  userId String
+
+  nome     String
+  telefone String?
+  email    String?
+  notas    String?
+
+  // URL da foto (ex.: vinda do Google Contatos/Fotos numa iteração futura,
+  // ou enviada manualmente). Nunca guardamos o binário da foto, só a URL.
+  fotoUrl String?
+
+  categoriaId String
+  categoria   Categoria @relation(fields: [categoriaId], references: [id])
+
+  // Sobrescreve a cadência padrão da categoria só para esta pessoa
+  // (ex.: "minha mãe" pode ter cadência de 7 dias mesmo estando em
+  // "Família", cuja cadência padrão é 15 dias). Nulo = usa a da categoria.
+  cadenciaDiasPersonalizada Int?
+
+  // Preenchido no futuro ao vincular com o Google Contatos, para permitir
+  // sincronização sem duplicar pessoas. Ver docs/ROADMAP.md.
+  googleContactId String?
+
+  arquivadoEm DateTime? // "soft delete": pessoa arquivada não some do histórico
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interacoes Interacao[]
+  sugestoes  Sugestao[]
+
+  @@index([userId])
+  @@index([categoriaId])
+  @@map("pessoas")
+}
+
+// Um contato direto que de fato aconteceu (ligação, café, etc.), registrado
+// manualmente pelo usuário ou gerado ao confirmar uma Sugestao.
+model Interacao {
+  id       String @id @default(cuid())
+  pessoaId String
+
+  tipo   TipoContato
+  data   DateTime
+  nota   String?
+  origem OrigemInteracao @default(MANUAL)
+
+  criadoEm DateTime @default(now())
+
+  pessoa Pessoa @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
+
+  @@index([pessoaId, data])
+  @@map("interacoes")
+}
+
+// Uma sugestão de contato gerada pelo app, que fica PENDENTE até o usuário
+// confirmar (vira Interacao) ou recusar. Nada é agendado automaticamente
+// sem essa confirmação explícita — requisito central do produto.
+model Sugestao {
+  id       String @id @default(cuid())
+  pessoaId String
+
+  tipoSugerido  TipoContato
+  dataSugerida  DateTime
+  motivo        String? // texto curto explicando o porquê (ex.: "40 dias sem contato")
+  status        StatusSugestao @default(PENDENTE)
+
+  // Preenchido quando o usuário confirma a sugestão; aponta para a
+  // interação criada a partir dela.
+  interacaoGeradaId String? @unique
+
+  criadoEm    DateTime  @default(now())
+  respondidoEm DateTime?
+
+  pessoa Pessoa @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
+
+  @@index([pessoaId, status])
+  @@map("sugestoes")
+}

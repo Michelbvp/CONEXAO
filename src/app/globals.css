@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    color-scheme: light;
+  }
+
+  body {
+    @apply bg-marfim text-grafite-900 antialiased;
+  }
+
+  /* Negrito só em títulos/subtítulos, como pedido — o resto do texto usa o
+     peso normal da fonte para manter a leitura leve e executiva. */
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-bold text-grafite-950;
+  }
+}
+
+@layer components {
+  /* Estilo padrão de campos de formulário (input/select/textarea) em todo o
+     app — cantos arredondados (mas não em pílula, reservada para botões),
+     mesma paleta neutra do resto da interface. */
+  .campo-texto {
+    @apply w-full rounded-lg border border-prata-300 bg-white px-3.5 py-2 text-sm text-grafite-900;
+    @apply placeholder:text-prata-400;
+    @apply focus:outline-none focus:ring-2 focus:ring-grafite-700 focus:ring-offset-0;
+  }
+}

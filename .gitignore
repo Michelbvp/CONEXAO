@@ -1,0 +1,32 @@
+# dependências
+node_modules/
+
+# build
+.next/
+out/
+build/
+dist/
+
+# variáveis de ambiente — NUNCA versionar segredos
+.env
+.env.local
+.env.*.local
+
+# prisma
+prisma/dev.db
+prisma/dev.db-journal
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# sistema operacional / editor
+.DS_Store
+*.pem
+.vscode/*
+!.vscode/extensions.json
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
