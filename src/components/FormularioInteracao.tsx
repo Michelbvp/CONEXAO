@@ -16,7 +16,13 @@ export function FormularioInteracao({ pessoaId }: { pessoaId: string }) {
     setEnviando(true)
     setErro(null)
 
-    const formulario = new FormData(evento.currentTarget)
+    // Guarda uma referência direta ao elemento do formulário antes do
+    // `await` abaixo: o React zera `evento.currentTarget` assim que o
+    // disparo síncrono do evento termina, então usá-lo depois de esperar o
+    // fetch (para chamar `.reset()`) lançava um erro — e o contato já tinha
+    // sido salvo com sucesso quando isso acontecia.
+    const formularioElemento = evento.currentTarget
+    const formulario = new FormData(formularioElemento)
     const corpo = {
       pessoaId,
       tipo: formulario.get('tipo'),
@@ -30,7 +36,7 @@ export function FormularioInteracao({ pessoaId }: { pessoaId: string }) {
         body: JSON.stringify(corpo),
       })
       if (!resposta.ok) throw new Error()
-      evento.currentTarget.reset()
+      formularioElemento.reset()
       router.refresh()
     } catch {
       setErro('Não foi possível registrar o contato. Tente novamente.')
