@@ -31,6 +31,14 @@ pessoais e como ele se relaciona com a Lei Geral de Proteção de Dados
   automaticamente — só a pessoa que você clicar em "Importar" vira um
   registro no Conexão, e o app só **lê** contatos: nunca cria, altera ou
   apaga nada no Google Contatos.
+- **E-mail de lembrete**: quando surgem novas sugestões de contato
+  pendentes (geradas 1x por dia pelo job agendado, ver
+  `docs/ROADMAP.md`), o app envia um e-mail resumindo quem está com contato
+  em atraso/atenção, usando o serviço [Resend](https://resend.com) — um
+  **operador** de dados nos termos da LGPD (art. 5º, VII), processando em
+  nome do Conexão só o necessário para entregar esse e-mail (seu endereço e
+  o texto do lembrete). Opcional: sem uma chave do Resend configurada, o
+  app funciona normalmente e simplesmente não envia esse e-mail.
 
 O app **não coleta** localização, dados biométricos, de saúde, ou
 categorias de dados sensíveis (art. 5º, II, LGPD) — e não deve passar a
@@ -83,6 +91,10 @@ sensíveis exigem base legal e cuidados redobrados.
   compartilham a renovação de token em `src/lib/googleTokens.ts`). Ficam
   protegidos pelas mesmas garantias de segurança do banco de dados (conexão
   criptografada, acesso restrito por credencial).
+- **Minimização no e-mail de lembrete**: o Resend só recebe o necessário
+  para entregar a mensagem (seu e-mail e o texto do lembrete) — nunca
+  telefone, notas ou qualquer outro dado das pessoas cadastradas (ver
+  `src/lib/email.ts`).
 
 ## Direitos do titular já cobertos pelo app
 

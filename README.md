@@ -33,11 +33,14 @@ está aprendendo a partir do projeto.
 - **Importar do Google Contatos**: sugere pessoas já cadastradas no seu
   Google para trazer para o Conexão — você escolhe uma a uma quem importar
   (nada é trazido automaticamente).
+- As sugestões de contato são geradas **automaticamente todo dia** (job
+  agendado), mesmo que você não abra o app naquele dia — e quando surge
+  alguma nova, chega um **e-mail de lembrete** (opcional, via Resend).
 
-O que **ainda não** está implementado (e está mapeado em
-`docs/ROADMAP.md`): sincronização com Google Fotos. O modelo de dados já
-foi desenhado pensando nela, mas a integração em si é uma próxima
-iteração.
+A sincronização com Google Fotos foi avaliada e **abortada** (ver
+`docs/ROADMAP.md`, Iteração 5): o Google descontinuou o jeito simples de
+fazer isso em 2025, e o substituto exigiria uma complexidade que não vale
+a pena para este projeto por enquanto.
 
 ## Stack escolhida e por quê
 

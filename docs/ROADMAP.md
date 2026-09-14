@@ -130,11 +130,23 @@ Ainda pendente desta iteração (fica para uma próxima):
 - O envio de lembrete por e-mail/notificação (mencionado aqui antes) foi
   deslocado para a Iteração 7, que já é dedicada a notificações.
 
-## Iteração 7 — notificações
+## Iteração 7 — notificações — concluída (e-mail)
 
-- E-mail (ou notificação push, se o app virar PWA) quando surgir uma nova
-  sugestão de contato pendente, para o usuário não depender de abrir o app
-  para lembrar.
+- Quando o job diário (Iteração 6) gera novas sugestões de contato de
+  verdade, o Conexão envia um e-mail resumindo quem está com contato em
+  atraso/atenção — usando o [Resend](https://resend.com), que tem plano
+  gratuito generoso (3.000 e-mails/mês) e não exige cartão de crédito. Ver
+  `src/lib/email.ts` e `docs/DEPLOY.md`.
+- Opcional: sem `RESEND_API_KEY` configurada, o app funciona normalmente e
+  só não envia esse e-mail — igual ao padrão já usado para Google/Facebook.
+- Sem verificar um domínio próprio no Resend, o e-mail só chega ao
+  endereço da própria conta Resend — por isso a recomendação em
+  `docs/DEPLOY.md` é usar o mesmo e-mail da conta do Conexão. Funciona bem
+  para o caso de uso atual (um usuário só); se um dia o app ganhar mais
+  usuários "reais", cada um precisaria de sua própria configuração, ou o
+  projeto passaria a exigir um domínio verificado.
+- Notificação push (caso o app vire um PWA) ainda não foi implementada —
+  fica como possível próximo passo dentro desta mesma iteração.
 
 ## Ideias de mais longo prazo (sem prioridade definida ainda)
 

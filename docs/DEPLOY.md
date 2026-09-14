@@ -126,7 +126,29 @@ recarrega sozinho).
 Alternativa equivalente: [Supabase](https://supabase.com) também oferece
 Postgres gratuito e funciona da mesma forma.
 
-## 5. Publicando o app (deploy) na Vercel
+## 5. Configurando o e-mail de lembrete (Resend)
+
+Opcional — sem isso o app funciona normalmente, só não avisa por e-mail
+quando surgem novas sugestões de contato pendentes (ver `docs/ROADMAP.md`,
+Iteração 7).
+
+1. Crie uma conta gratuita em [resend.com](https://resend.com) usando o
+   mesmo e-mail que você usa para entrar no Conexão (veja o porquê no passo
+   3). O plano gratuito cobre até 3.000 e-mails/mês — muito mais que o
+   suficiente para uso pessoal (no máximo 1 e-mail por dia).
+2. Em **API Keys**, crie uma nova chave e copie o valor para
+   `RESEND_API_KEY` (no `.env` local e nas variáveis de ambiente da
+   Vercel).
+3. **Sem verificar um domínio próprio**, o Resend só entrega e-mails para o
+   endereço da própria conta Resend — por isso o passo 1 pede o mesmo
+   e-mail: como o Conexão é um app de uso pessoal, os lembretes vão para
+   você mesmo, e não é preciso configurar (nem pagar por) um domínio.
+   `EMAIL_REMETENTE` pode ficar com o valor padrão do `.env.example`
+   (`Conexão <onboarding@resend.dev>`). Se um dia você quiser enviar de um
+   endereço com o seu próprio domínio, dá pra verificar um domínio no
+   Resend e trocar esse valor.
+
+## 6. Publicando o app (deploy) na Vercel
 
 A Vercel foi escolhida por ser a hospedagem mais simples para apps Next.js,
 com plano gratuito (Hobby) suficiente para uso pessoal, e por publicar uma
@@ -142,7 +164,7 @@ plano de "aplicar iterações aos poucos".
 4. Em **Environment Variables**, adicione todas as variáveis do seu `.env`
    local (`DATABASE_URL`, `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`,
    `GOOGLE_CLIENT_SECRET`, `FACEBOOK_CLIENT_ID`, `FACEBOOK_CLIENT_SECRET`,
-   `CRON_SECRET`).
+   `CRON_SECRET`, `RESEND_API_KEY`, `EMAIL_REMETENTE`).
    - **Não** adicione `ALLOW_DEMO_LOGIN` em produção (ou deixe como
      `false`) — o login de demonstração deve existir só localmente.
    - `NEXTAUTH_URL` deve ser a URL final do seu app, ex.:

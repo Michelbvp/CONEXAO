@@ -66,13 +66,25 @@ export function motivoSugestao(diasDesdeUltimoContato: number | null): string {
   return `${diasDesdeUltimoContato} ${diasDesdeUltimoContato === 1 ? 'dia' : 'dias'} desde o último contato`
 }
 
+export type NovaSugestaoGerada = {
+  pessoaId: string
+  nomePessoa: string
+  tipoSugerido: TipoContato
+  motivo: string
+}
+
 /**
  * Percorre todas as pessoas ativas (não arquivadas) de um usuário e cria uma
  * Sugestao PENDENTE para quem estiver em ATENCAO/ATRASADO/SEM_HISTORICO e
  * ainda não tiver uma sugestão pendente em aberto. É seguro chamar com
  * frequência: nunca duplica sugestão para quem já tem uma pendente.
+ *
+ * Devolve as sugestões recém-criadas (com o nome da pessoa) para quem
+ * chamou decidir o que fazer com elas — ex.: o job diário (ver
+ * src/app/api/cron/sugestoes/route.ts) usa isso para enviar um e-mail de
+ * lembrete só quando há algo novo de fato.
  */
-export async function sincronizarSugestoesDoUsuario(userId: string): Promise<void> {
+export async function sincronizarSugestoesDoUsuario(userId: string): Promise<NovaSugestaoGerada[]> {
   const pessoas = await prisma.pessoa.findMany({
     where: { userId, arquivadoEm: null },
     include: {
@@ -83,12 +95,7 @@ export async function sincronizarSugestoesDoUsuario(userId: string): Promise<voi
     },
   })
 
-  const novasSugestoes: {
-    pessoaId: string
-    tipoSugerido: TipoContato
-    dataSugerida: Date
-    motivo: string
-  }[] = []
+  const novasSugestoes: NovaSugestaoGerada[] = []
 
   for (const pessoa of pessoas) {
     if (pessoa.sugestoes.length > 0) continue // já existe sugestão pendente
@@ -105,13 +112,22 @@ export async function sincronizarSugestoesDoUsuario(userId: string): Promise<voi
 
     novasSugestoes.push({
       pessoaId: pessoa.id,
+      nomePessoa: pessoa.nome,
       tipoSugerido: escolherTipoSugerido(pessoa.categoria.tiposPreferidos, ultimaInteracao?.tipo ?? null),
-      dataSugerida: new Date(),
       motivo: motivoSugestao(diasDesde),
     })
   }
 
   if (novasSugestoes.length > 0) {
-    await prisma.sugestao.createMany({ data: novasSugestoes })
+    await prisma.sugestao.createMany({
+      data: novasSugestoes.map(({ pessoaId, tipoSugerido, motivo }) => ({
+        pessoaId,
+        tipoSugerido,
+        motivo,
+        dataSugerida: new Date(),
+      })),
+    })
   }
+
+  return novasSugestoes
 }

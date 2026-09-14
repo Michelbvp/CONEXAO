@@ -18,8 +18,9 @@ export default async function PaginaInicial() {
   // sempre — a função já não faz nada se as categorias já existirem.
   await garantirCategoriasPadrao(session.user.id)
 
-  // Gera sugestões pendentes que ainda não existem antes de montar a tela.
-  // Ver docs/ROADMAP.md sobre mover isso para um job agendado no futuro.
+  // Gera sugestões pendentes que ainda não existem antes de montar a tela
+  // (o job diário em src/app/api/cron/sugestoes/route.ts cobre os dias em
+  // que o usuário não abre o app — os dois convivem sem duplicar nada).
   await sincronizarSugestoesDoUsuario(session.user.id)
   const categorias = await obterDashboard(session.user.id)
 
