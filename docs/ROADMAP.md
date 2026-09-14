@@ -1,0 +1,156 @@
+# Roteiro de iterações
+
+Este projeto foi combinado para evoluir aos poucos. Esta é a base (iteração
+1) e a lista do que dá para vir a seguir, em ordem sugerida de valor/
+esforço. Nada aqui é compromisso fechado — é só um mapa para orientar os
+próximos pedidos.
+
+## Iteração 1 — concluída (esta entrega)
+
+- Estrutura do projeto (Next.js + TypeScript + Tailwind + Prisma).
+- Modelo de dados: usuários, categorias, pessoas, interações e sugestões.
+- Autenticação por login social (Google e Facebook), com modo de
+  demonstração para testar sem configurar credenciais ainda.
+- Painel principal com pessoas agrupadas por categoria, status visual de
+  "em dia / atenção / atrasado" e sugestões de contato pendentes de
+  confirmação.
+- Cadastro de pessoas, registro manual de contatos e histórico por pessoa.
+- Documentação de instalação, deploy gratuito e privacidade/LGPD.
+
+## Iteração 2 — concluída
+
+- Tela de **edição** de pessoa, incluindo cadência personalizada.
+- Tela de **configurações de categoria** (renomear, ajustar cadência
+  padrão e tipos de contato preferidos, criar/excluir categorias).
+
+Ainda pendente desta iteração (fica para uma próxima):
+- Tela de **"Minha conta"** com o botão de excluir conta (hoje a exclusão
+  já existe como rota de API, mas sem botão na interface).
+- Paginação/filtro no painel quando houver muitas pessoas cadastradas.
+
+## Iteração 3 — Google Calendário — concluída
+
+- Ao confirmar uma sugestão de contato, o usuário escolhe a data/horário e
+  o app cria automaticamente um evento no Google Calendário principal dele
+  (ex.: "Café com Ana Beatriz"), com um link de volta para o evento visível
+  no histórico da pessoa.
+- Pede o escopo adicional `https://www.googleapis.com/auth/calendar.events`
+  (o mais restrito que o Google oferece para eventos) no login com Google —
+  quem já tinha conectado a conta antes precisa sair e entrar de novo para
+  conceder esse escopo.
+- Se o usuário não conectou o Google, ou se a chamada à API do Google
+  falhar por qualquer motivo, o contato é registrado normalmente mesmo
+  assim — a integração nunca bloqueia a funcionalidade principal.
+- Tokens de acesso são renovados sozinhos (usando o refresh_token obtido no
+  login) — ver `src/lib/googleCalendar.ts`.
+
+## Iteração 3.5 — Agendamentos — concluída
+
+- **Registrar um contato pela tela da pessoa e confirmar uma sugestão
+  seguem exatamente a mesma regra agora**: escolher uma data/horário no
+  **futuro** não vai mais direto pro histórico — cria um **Agendamento**
+  (status "Agendado"), que fica ativo esperando o usuário dizer o que
+  aconteceu. Escolher agora/passado continua indo direto pro histórico,
+  como antes — e em ambos os casos, com sincronização no Google
+  Calendário (se a conta estiver conectada).
+- Um Agendamento pendente aparece no painel principal (card da pessoa) e
+  na página da pessoa, com três ações:
+  - **Realizado** → cria a interação de verdade no histórico;
+  - **Reagendar** → só muda a data/horário (continua Agendado), e atualiza
+    o evento correspondente no Google Calendário;
+  - **Cancelar** → fecha o agendamento sem virar uma interação; aparece no
+    histórico da pessoa marcado como "Cancelado" (mantém o registro do que
+    foi combinado e não aconteceu), e remove o evento do Google Calendário.
+- Nova página **Agenda** (link no cabeçalho): lista os agendamentos dos
+  próximos 7 dias de todas as pessoas, com as mesmas três ações à mão —
+  além de uma seção "Atrasados" para agendamentos cuja data já passou e
+  ainda não foram resolvidos.
+- Enquanto uma pessoa tem um agendamento pendente, o app não gera uma nova
+  sugestão de contato pra ela (evita sugerir algo que já está marcado).
+
+## Iteração 4 — Google Contatos — concluída
+
+- Nova página **"Importar do Google Contatos"** (link a partir de "Nova
+  pessoa"): lista os contatos do Google que ainda não foram trazidos para o
+  Conexão, com busca por nome/e-mail/telefone, escolha de categoria por
+  contato e um botão **Importar** individual — nada é importado
+  automaticamente, o usuário escolhe um a um.
+- Cada pessoa importada guarda o `googleContactId` (campo já existente no
+  banco desde a Iteração 1), o que impede importar o mesmo contato duas
+  vezes — a rota `POST /api/pessoas` recusa uma segunda tentativa com o
+  mesmo id.
+- Foto de perfil do contato (quando existir no Google) é trazida junto,
+  usando o campo `fotoUrl` já existente.
+- Só leitura: o app nunca cria, altera ou apaga nada nos contatos do
+  usuário no Google — usa a Google People API (`people.connections.list`)
+  apenas para listar.
+- Pede o escopo adicional
+  `https://www.googleapis.com/auth/contacts.readonly` (o mais restrito que
+  o Google oferece para leitura de contatos) no login com Google — quem já
+  tinha conectado a conta antes precisa sair e entrar de novo para
+  conceder esse escopo.
+- Se o usuário não conectou o Google, a página explica isso em vez de dar
+  erro; se a chamada à API do Google falhar, mostra uma mensagem amigável
+  e não afeta o resto do app.
+
+## Iteração 5 — Google Fotos — abortada
+
+- O plano original era deixar escolher uma foto do Google Fotos como foto
+  de perfil de uma pessoa, pedindo o escopo
+  `photoslibrary.readonly`. Ao pesquisar antes de implementar, descobrimos
+  que o Google **descontinuou esse escopo em março de 2025** — chamadas com
+  ele agora retornam erro 403 para qualquer aplicativo.
+- O substituto oficial (Google Photos Picker API) funciona de um jeito bem
+  diferente do que tínhamos planejado: abre uma janela separada do próprio
+  Google para a pessoa escolher a foto lá (não dá pra listar as fotos
+  dentro do Conexão, como fazemos com os Contatos), e o link da foto
+  escolhida só funciona por 60 minutos — ou seja, precisaríamos passar a
+  guardar o arquivo da foto no nosso banco de dados, mudando uma decisão de
+  design que o projeto tinha desde o início ("nunca guardar o binário da
+  foto, só a URL").
+- Decisão: não vale o esforço/complexidade extra agora. Iteração abortada;
+  fica registrada aqui caso valha revisitar no futuro (upload manual de
+  foto pelo próprio usuário seria uma alternativa bem mais simples, sem
+  depender de nenhuma API do Google).
+
+## Iteração 6 — sugestões automáticas em segundo plano — concluída
+
+- Novo job agendado (`vercel.json` + `src/app/api/cron/sugestoes/route.ts`)
+  roda 1x por dia (via Vercel Cron, incluído no plano gratuito) e gera as
+  sugestões de contato pendentes para **todos** os usuários — mesmo que
+  ninguém abra o app naquele dia.
+- A geração "na hora", ao carregar o painel, continua existindo do mesmo
+  jeito de antes — os dois mecanismos convivem sem conflito, porque
+  `sincronizarSugestoesDoUsuario` nunca duplica uma sugestão já pendente
+  para a mesma pessoa.
+- A rota do job é protegida pela variável de ambiente `CRON_SECRET`: só
+  aceita chamadas com o cabeçalho `Authorization` correspondente, que a
+  própria Vercel envia sozinha nas chamadas agendadas — ver
+  `docs/DEPLOY.md`.
+- O envio de lembrete por e-mail/notificação (mencionado aqui antes) foi
+  deslocado para a Iteração 7, que já é dedicada a notificações.
+
+## Iteração 7 — notificações — concluída (e-mail)
+
+- Quando o job diário (Iteração 6) gera novas sugestões de contato de
+  verdade, o Conexão envia um e-mail resumindo quem está com contato em
+  atraso/atenção — usando o [Resend](https://resend.com), que tem plano
+  gratuito generoso (3.000 e-mails/mês) e não exige cartão de crédito. Ver
+  `src/lib/email.ts` e `docs/DEPLOY.md`.
+- Opcional: sem `RESEND_API_KEY` configurada, o app funciona normalmente e
+  só não envia esse e-mail — igual ao padrão já usado para Google/Facebook.
+- Sem verificar um domínio próprio no Resend, o e-mail só chega ao
+  endereço da própria conta Resend — por isso a recomendação em
+  `docs/DEPLOY.md` é usar o mesmo e-mail da conta do Conexão. Funciona bem
+  para o caso de uso atual (um usuário só); se um dia o app ganhar mais
+  usuários "reais", cada um precisaria de sua própria configuração, ou o
+  projeto passaria a exigir um domínio verificado.
+- Notificação push (caso o app vire um PWA) ainda não foi implementada —
+  fica como possível próximo passo dentro desta mesma iteração.
+
+## Ideias de mais longo prazo (sem prioridade definida ainda)
+
+- Estatísticas simples (ex.: quantos contatos por categoria no mês).
+- Exportar os dados cadastrados (CSV) — reforça o direito de portabilidade
+  da LGPD.
+- Modo escuro (mantendo a paleta preto/cinza/prata/branco).
