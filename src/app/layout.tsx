@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import { Analytics } from '@vercel/analytics/next'
 
 import { ProvedorSessao } from '@/components/ProvedorSessao'
 
@@ -19,6 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="pt-BR">
       <body className="font-sans">
         <ProvedorSessao>{children}</ProvedorSessao>
+        <Analytics />
       </body>
     </html>
   )
