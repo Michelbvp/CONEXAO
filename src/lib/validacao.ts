@@ -43,6 +43,16 @@ export const criarPessoaSchema = z.object({
     (valor) => (valor === '' ? null : valor),
     z.union([z.coerce.number().int().min(1).max(3650), z.null()]).optional(),
   ),
+  // Preenchidos só pelo fluxo de importar do Google Contatos (ver
+  // src/app/pessoas/importar/page.tsx) — nunca vêm do formulário manual.
+  fotoUrl: z.preprocess(
+    (valor) => (valor === null || valor === '' ? undefined : valor),
+    z.string().trim().url('URL de foto inválida.').max(500).optional(),
+  ),
+  googleContactId: z.preprocess(
+    (valor) => (valor === null || valor === '' ? undefined : valor),
+    z.string().trim().max(200).optional(),
+  ),
 })
 
 export const atualizarPessoaSchema = criarPessoaSchema.partial().extend({

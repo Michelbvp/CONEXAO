@@ -68,14 +68,30 @@ Ainda pendente desta iteração (fica para uma próxima):
 - Enquanto uma pessoa tem um agendamento pendente, o app não gera uma nova
   sugestão de contato pra ela (evita sugerir algo que já está marcado).
 
-## Iteração 4 — Google Contatos
+## Iteração 4 — Google Contatos — concluída
 
-- Importar pessoas existentes do Google Contatos como sugestão de cadastro
-  (o usuário escolhe quem trazer para o Conexão, não é importado tudo
-  automaticamente).
-- Guardar o `googleContactId` (campo já existente no banco) para manter a
-  ligação entre a pessoa no Conexão e o contato no Google.
-- Escopo adicional: `https://www.googleapis.com/auth/contacts.readonly`.
+- Nova página **"Importar do Google Contatos"** (link a partir de "Nova
+  pessoa"): lista os contatos do Google que ainda não foram trazidos para o
+  Conexão, com busca por nome/e-mail/telefone, escolha de categoria por
+  contato e um botão **Importar** individual — nada é importado
+  automaticamente, o usuário escolhe um a um.
+- Cada pessoa importada guarda o `googleContactId` (campo já existente no
+  banco desde a Iteração 1), o que impede importar o mesmo contato duas
+  vezes — a rota `POST /api/pessoas` recusa uma segunda tentativa com o
+  mesmo id.
+- Foto de perfil do contato (quando existir no Google) é trazida junto,
+  usando o campo `fotoUrl` já existente.
+- Só leitura: o app nunca cria, altera ou apaga nada nos contatos do
+  usuário no Google — usa a Google People API (`people.connections.list`)
+  apenas para listar.
+- Pede o escopo adicional
+  `https://www.googleapis.com/auth/contacts.readonly` (o mais restrito que
+  o Google oferece para leitura de contatos) no login com Google — quem já
+  tinha conectado a conta antes precisa sair e entrar de novo para
+  conceder esse escopo.
+- Se o usuário não conectou o Google, a página explica isso em vez de dar
+  erro; se a chamada à API do Google falhar, mostra uma mensagem amigável
+  e não afeta o resto do app.
 
 ## Iteração 5 — Google Fotos
 

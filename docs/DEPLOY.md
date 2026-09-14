@@ -54,24 +54,28 @@ A partir daqui, qualquer alteração que eu (o Claude) fizer no código, ou que
 você mesmo fizer, aparece automaticamente ao salvar o arquivo (o `next dev`
 recarrega sozinho).
 
-## 2. Configurando login com Google (e o Google Calendário)
+## 2. Configurando login com Google (Calendário e Contatos)
 
 1. Acesse o [Google Cloud Console](https://console.cloud.google.com/) e crie
    um novo projeto (ou use um existente).
 2. Vá em **APIs e serviços → Biblioteca**, procure por **"Google Calendar
    API"** e clique em **Ativar**. Sem esse passo, criar eventos vai falhar
    com um erro dizendo que a API não está habilitada no projeto.
+   - Repita a busca por **"Google People API"** e ative também — é a API
+     usada para ler seus contatos na tela "Importar do Google Contatos"
+     (só leitura, ver `docs/PRIVACIDADE.md`).
 3. No menu, vá em **APIs e serviços → Tela de consentimento OAuth**.
    - Tipo de usuário: **Externo**.
    - Preencha nome do app ("Conexão"), e-mail de suporte e e-mail de
      contato do desenvolvedor (o seu, michelbvp@gmail.com).
    - Em "Escopos", clique em "Adicionar ou remover escopos" e adicione:
      `.../auth/calendar.events` (o Conexão usa esse escopo para criar
-     eventos quando você confirma uma sugestão de contato — ver
-     `docs/PRIVACIDADE.md`). O Google classifica esse escopo como
-     "sensível"; para uso pessoal em modo de teste isso não é um problema,
-     só é relevante se um dia o app for publicado para o público em geral
-     (aí o Google exige um processo de verificação).
+     eventos quando você confirma uma sugestão de contato) e
+     `.../auth/contacts.readonly` (usado só para listar seus contatos na
+     tela de importação — ver `docs/PRIVACIDADE.md`). O Google classifica
+     esses escopos como "sensíveis"; para uso pessoal em modo de teste isso
+     não é um problema, só é relevante se um dia o app for publicado para o
+     público em geral (aí o Google exige um processo de verificação).
    - Em "Usuários de teste" (enquanto o app não estiver "publicado"),
      adicione seu próprio e-mail do Google.
 4. Vá em **APIs e serviços → Credenciais → Criar credenciais → ID do
@@ -88,9 +92,10 @@ recarrega sozinho).
 5. Copie o **ID do cliente** e o **Segredo do cliente** gerados e cole em
    `GOOGLE_CLIENT_ID` e `GOOGLE_CLIENT_SECRET` no `.env` (localmente) e nas
    variáveis de ambiente da Vercel (em produção — ver seção 4).
-6. Se você já tinha feito login com Google antes de configurar o escopo do
-   Calendário, saia da conta no Conexão (botão "Sair") e entre de novo — o
-   Google só concede um escopo novo depois de um consentimento novo.
+6. Se você já tinha feito login com Google antes de configurar os escopos do
+   Calendário/Contatos, saia da conta no Conexão (botão "Sair") e entre de
+   novo — o Google só concede um escopo novo depois de um consentimento
+   novo.
 
 ## 3. Configurando login com Facebook
 

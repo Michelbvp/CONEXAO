@@ -25,6 +25,12 @@ pessoais e como ele se relaciona com a Lei Geral de Proteção de Dados
   com o tipo de contato e o nome da pessoa, ex.: "Café com Ana Beatriz",
   na data/horário que você escolher). O app só **cria** eventos — nunca lê,
   lista ou altera outros eventos já existentes na sua agenda.
+- **Leitura do Google Contatos**: na tela "Importar do Google Contatos", o
+  app lista nome, e-mail, telefone e foto dos seus contatos do Google, só
+  para você escolher quem trazer para o Conexão. Nada é importado
+  automaticamente — só a pessoa que você clicar em "Importar" vira um
+  registro no Conexão, e o app só **lê** contatos: nunca cria, altera ou
+  apaga nada no Google Contatos.
 
 O app **não coleta** localização, dados biométricos, de saúde, ou
 categorias de dados sensíveis (art. 5º, II, LGPD) — e não deve passar a
@@ -35,9 +41,10 @@ sensíveis exigem base legal e cuidados redobrados.
 
 - **Autenticação (Google/Facebook)**: consentimento do próprio titular ao
   fazer login e autorizar os escopos solicitados.
-- **Criação de eventos no Google Calendário**: consentimento explícito do
-  próprio titular ao autorizar o escopo `calendar.events` no login com
-  Google — ele pode revogar esse acesso a qualquer momento em
+- **Criação de eventos no Google Calendário** e **leitura do Google
+  Contatos**: consentimento explícito do próprio titular ao autorizar os
+  escopos `calendar.events` e `contacts.readonly` no login com Google — ele
+  pode revogar esse acesso a qualquer momento em
   [myaccount.google.com/permissions](https://myaccount.google.com/permissions),
   sem precisar excluir a conta no Conexão.
 - **Cadastro de pessoas do seu círculo**: legítimo interesse do usuário em
@@ -48,11 +55,12 @@ sensíveis exigem base legal e cuidados redobrados.
 ## Princípios aplicados no código
 
 - **Minimização**: só é pedido o dado estritamente necessário para a
-  funcionalidade. O login com Google pede `openid email profile` (identidade)
-  e `calendar.events` (só eventos, não a agenda inteira nem outros dados da
-  conta) — o escopo mais restrito que o Google oferece para criar eventos.
-  Escopos de Contatos/Fotos só serão pedidos quando essas integrações
-  existirem de fato (ver `docs/ROADMAP.md`).
+  funcionalidade. O login com Google pede `openid email profile` (identidade),
+  `calendar.events` (só eventos, não a agenda inteira nem outros dados da
+  conta) e `contacts.readonly` (só leitura de contatos, sem permissão para
+  alterá-los) — em ambos os casos, o escopo mais restrito que o Google
+  oferece para a funcionalidade correspondente. O escopo de Fotos só será
+  pedido quando essa integração existir de fato (ver `docs/ROADMAP.md`).
 - **Isolamento por usuário**: toda tabela (`Pessoa`, `Categoria`,
   `Interacao`, `Sugestao`) está sempre filtrada por `userId` nas consultas
   e nas rotas de API validam que o registro pertence a quem fez a
@@ -70,10 +78,11 @@ sensíveis exigem base legal e cuidados redobrados.
   ver `.gitignore`).
 - **Tokens de acesso do Google**: guardados só no banco (tabela
   `contas_oauth`, gerenciada pelo NextAuth), nunca expostos ao navegador —
-  toda chamada à API do Google Calendário acontece no servidor (ver
-  `src/lib/googleCalendar.ts`). Ficam protegidos pelas mesmas garantias de
-  segurança do banco de dados (conexão criptografada, acesso restrito por
-  credencial).
+  toda chamada às APIs do Google Calendário e Contatos acontece no servidor
+  (ver `src/lib/googleCalendar.ts` e `src/lib/googleContacts.ts`, que
+  compartilham a renovação de token em `src/lib/googleTokens.ts`). Ficam
+  protegidos pelas mesmas garantias de segurança do banco de dados (conexão
+  criptografada, acesso restrito por credencial).
 
 ## Direitos do titular já cobertos pelo app
 

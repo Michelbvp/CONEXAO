@@ -45,13 +45,17 @@ export const authOptions: AuthOptions = {
             clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
             authorization: {
               params: {
-                // Escopo do Calendário é o mais restrito que o Google
-                // oferece para essa funcionalidade (calendar.events só dá
-                // acesso a eventos, não à agenda inteira nem a outros dados
-                // da conta). Contatos/Fotos ainda não são pedidos — só
-                // entram quando essas integrações forem implementadas (ver
+                // Cada escopo é o mais restrito que o Google oferece para a
+                // funcionalidade correspondente: calendar.events só dá
+                // acesso a eventos (não à agenda inteira), e
+                // contacts.readonly só permite LER contatos — o app nunca
+                // cria/altera/apaga nada no Google Contatos, só lista pra
+                // o usuário escolher quem importar (ver
+                // src/lib/googleContacts.ts). Fotos ainda não é pedido — só
+                // entra quando essa integração for implementada (ver
                 // docs/ROADMAP.md), sempre de forma incremental.
-                scope: 'openid email profile https://www.googleapis.com/auth/calendar.events',
+                scope:
+                  'openid email profile https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/contacts.readonly',
                 // access_type=offline + prompt=consent são o que faz o
                 // Google devolver um refresh_token (sem isso, o app só
                 // ganha um access_token que expira em ~1h e não tem como

@@ -37,6 +37,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ erro: 'Categoria inválida.' }, { status: 400 })
   }
 
+  // Evita importar o mesmo contato do Google duas vezes (ex.: duplo clique
+  // em "Importar" — ver src/app/pessoas/importar/page.tsx).
+  if (dados.googleContactId) {
+    const jaImportado = await prisma.pessoa.findFirst({
+      where: { userId, googleContactId: dados.googleContactId },
+    })
+    if (jaImportado) {
+      return NextResponse.json({ erro: 'Este contato já foi importado.' }, { status: 400 })
+    }
+  }
+
   const pessoa = await prisma.pessoa.create({
     data: {
       userId,
@@ -46,6 +57,8 @@ export async function POST(request: NextRequest) {
       telefone: dados.telefone || null,
       notas: dados.notas || null,
       cadenciaDiasPersonalizada: dados.cadenciaDiasPersonalizada ?? null,
+      fotoUrl: dados.fotoUrl || null,
+      googleContactId: dados.googleContactId || null,
     },
   })
 

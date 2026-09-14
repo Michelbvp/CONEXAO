@@ -30,11 +30,14 @@ está aprendendo a partir do projeto.
   do usuário na data/horário escolhido (se a conta Google estiver
   conectada) — e mantém o evento em dia se o contato for reagendado ou
   cancelado.
+- **Importar do Google Contatos**: sugere pessoas já cadastradas no seu
+  Google para trazer para o Conexão — você escolhe uma a uma quem importar
+  (nada é trazido automaticamente).
 
 O que **ainda não** está implementado (e está mapeado em
-`docs/ROADMAP.md`): sincronização com Google Contatos e Google Fotos. O
-modelo de dados já foi desenhado pensando nelas, mas a integração em si é
-uma próxima iteração.
+`docs/ROADMAP.md`): sincronização com Google Fotos. O modelo de dados já
+foi desenhado pensando nela, mas a integração em si é uma próxima
+iteração.
 
 ## Stack escolhida e por quê
 
