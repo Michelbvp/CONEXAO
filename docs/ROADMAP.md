@@ -93,19 +93,42 @@ Ainda pendente desta iteração (fica para uma próxima):
   erro; se a chamada à API do Google falhar, mostra uma mensagem amigável
   e não afeta o resto do app.
 
-## Iteração 5 — Google Fotos
+## Iteração 5 — Google Fotos — abortada
 
-- Permitir escolher uma foto do Google Fotos como foto de perfil de uma
-  pessoa cadastrada (hoje o campo `fotoUrl` já existe no banco, mas só é
-  preenchido pela foto de perfil do próprio usuário logado).
-- Escopo adicional: `https://www.googleapis.com/auth/photoslibrary.readonly`.
+- O plano original era deixar escolher uma foto do Google Fotos como foto
+  de perfil de uma pessoa, pedindo o escopo
+  `photoslibrary.readonly`. Ao pesquisar antes de implementar, descobrimos
+  que o Google **descontinuou esse escopo em março de 2025** — chamadas com
+  ele agora retornam erro 403 para qualquer aplicativo.
+- O substituto oficial (Google Photos Picker API) funciona de um jeito bem
+  diferente do que tínhamos planejado: abre uma janela separada do próprio
+  Google para a pessoa escolher a foto lá (não dá pra listar as fotos
+  dentro do Conexão, como fazemos com os Contatos), e o link da foto
+  escolhida só funciona por 60 minutos — ou seja, precisaríamos passar a
+  guardar o arquivo da foto no nosso banco de dados, mudando uma decisão de
+  design que o projeto tinha desde o início ("nunca guardar o binário da
+  foto, só a URL").
+- Decisão: não vale o esforço/complexidade extra agora. Iteração abortada;
+  fica registrada aqui caso valha revisitar no futuro (upload manual de
+  foto pelo próprio usuário seria uma alternativa bem mais simples, sem
+  depender de nenhuma API do Google).
 
-## Iteração 6 — sugestões automáticas em segundo plano
+## Iteração 6 — sugestões automáticas em segundo plano — concluída
 
-- Hoje as sugestões são geradas quando o painel é carregado. Migrar para um
-  job agendado (Vercel Cron, 1x por dia) que gera as sugestões mesmo que o
-  usuário não abra o app naquele dia, e opcionalmente envia um lembrete por
-  e-mail/notificação.
+- Novo job agendado (`vercel.json` + `src/app/api/cron/sugestoes/route.ts`)
+  roda 1x por dia (via Vercel Cron, incluído no plano gratuito) e gera as
+  sugestões de contato pendentes para **todos** os usuários — mesmo que
+  ninguém abra o app naquele dia.
+- A geração "na hora", ao carregar o painel, continua existindo do mesmo
+  jeito de antes — os dois mecanismos convivem sem conflito, porque
+  `sincronizarSugestoesDoUsuario` nunca duplica uma sugestão já pendente
+  para a mesma pessoa.
+- A rota do job é protegida pela variável de ambiente `CRON_SECRET`: só
+  aceita chamadas com o cabeçalho `Authorization` correspondente, que a
+  própria Vercel envia sozinha nas chamadas agendadas — ver
+  `docs/DEPLOY.md`.
+- O envio de lembrete por e-mail/notificação (mencionado aqui antes) foi
+  deslocado para a Iteração 7, que já é dedicada a notificações.
 
 ## Iteração 7 — notificações
 

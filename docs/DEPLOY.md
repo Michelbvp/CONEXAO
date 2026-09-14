@@ -141,11 +141,17 @@ plano de "aplicar iterações aos poucos".
    mudar nada nas configurações de build.
 4. Em **Environment Variables**, adicione todas as variáveis do seu `.env`
    local (`DATABASE_URL`, `NEXTAUTH_SECRET`, `GOOGLE_CLIENT_ID`,
-   `GOOGLE_CLIENT_SECRET`, `FACEBOOK_CLIENT_ID`, `FACEBOOK_CLIENT_SECRET`).
+   `GOOGLE_CLIENT_SECRET`, `FACEBOOK_CLIENT_ID`, `FACEBOOK_CLIENT_SECRET`,
+   `CRON_SECRET`).
    - **Não** adicione `ALLOW_DEMO_LOGIN` em produção (ou deixe como
      `false`) — o login de demonstração deve existir só localmente.
    - `NEXTAUTH_URL` deve ser a URL final do seu app, ex.:
      `https://conexao-seu-usuario.vercel.app`.
+   - `CRON_SECRET` protege o job diário que gera sugestões de contato (ver
+     `docs/ROADMAP.md`, Iteração 6) — gere um valor aleatório forte (ex.:
+     `openssl rand -base64 32`). A própria Vercel detecta o arquivo
+     `vercel.json` do repositório e agenda o job sozinha; não precisa
+     configurar nada além dessa variável.
 5. Clique em **Deploy**. Em poucos minutos o app estará no ar com uma URL
    pública.
 6. Depois do primeiro deploy, volte ao Google Cloud Console e ao Facebook

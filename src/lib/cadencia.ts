@@ -7,10 +7,12 @@
 // verdade sem confirmação explícita do usuário — ver Sugestao.confirmar() em
 // src/app/api/sugestoes/[id]/route.ts.
 //
-// Hoje as sugestões são geradas "sob demanda" (toda vez que o dashboard é
-// carregado, ver sincronizarSugestoesDoUsuario). Numa iteração futura isso
-// pode virar um job agendado (Vercel Cron) que roda 1x/dia — ver
-// docs/ROADMAP.md — mas a regra de negócio em si não muda.
+// As sugestões são geradas de dois jeitos, sem conflito entre eles: "sob
+// demanda" (toda vez que o dashboard é carregado, ver src/app/page.tsx) e
+// 1x por dia via Vercel Cron (ver src/app/api/cron/sugestoes/route.ts e
+// vercel.json), para quem não abrir o app naquele dia. É seguro rodar os
+// dois porque sincronizarSugestoesDoUsuario nunca duplica uma sugestão já
+// pendente.
 // ============================================================================
 
 import { differenceInCalendarDays } from 'date-fns'
